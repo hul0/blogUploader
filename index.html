@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Markdown Blog Editor</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+  }
+  
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    overflow: hidden;
+  }
+  
+  .header {
+    background: linear-gradient(135deg, #24292e 0%, #1a1d21 100%);
+    color: white;
+    padding: 20px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .header h1 {
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .header-actions {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .btn-primary {
+    background: #667eea;
+    color: white;
+  }
+  
+  .btn-primary:hover {
+    background: #5568d3;
+    transform: translateY(-2px);
+  }
+  
+  .btn-success {
+    background: #48bb78;
+    color: white;
+  }
+  
+  .btn-success:hover {
+    background: #38a169;
+    transform: translateY(-2px);
+  }
+  
+  .btn-danger {
+    background: #f56565;
+    color: white;
+  }
+  
+  .btn-danger:hover {
+    background: #e53e3e;
+    transform: translateY(-2px);
+  }
+  
+  .btn-secondary {
+    background: #4a5568;
+    color: white;
+  }
+  
+  .btn-secondary:hover {
+    background: #2d3748;
+  }
+  
+  .toolbar {
+    background: #f7fafc;
+    padding: 15px 30px;
+    border-bottom: 2px solid #e2e8f0;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  
+  .toolbar button {
+    padding: 8px 12px;
+    background: white;
+    border: 1px solid #cbd5e0;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+  }
+  
+  .toolbar button:hover {
+    background: #edf2f7;
+    border-color: #667eea;
+  }
+  
+  .editor-container {
+    display: flex;
+    height: calc(100vh - 200px);
+    min-height: 500px;
+  }
+  
+  .editor-pane, .preview-pane {
+    flex: 1;
+    padding: 30px;
+    overflow-y: auto;
+  }
+  
+  .editor-pane {
+    background: #1e1e1e;
+    border-right: 2px solid #e2e8f0;
+  }
+  
+  .preview-pane {
+    background: white;
+  }
+  
+  #editor {
+    width: 100%;
+    height: 100%;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    border: none;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    resize: none;
+    outline: none;
+    padding: 20px;
+    border-radius: 8px;
+  }
+  
+  #preview {
+    line-height: 1.8;
+    font-size: 16px;
+  }
+  
+  #preview h1 { font-size: 2em; margin: 20px 0 10px; color: #1a202c; }
+  #preview h2 { font-size: 1.5em; margin: 18px 0 8px; color: #2d3748; }
+  #preview h3 { font-size: 1.25em; margin: 16px 0 6px; color: #4a5568; }
+  #preview p { margin: 10px 0; color: #4a5568; }
+  #preview code { background: #f7fafc; padding: 2px 6px; border-radius: 3px; font-family: monospace; color: #e53e3e; }
+  #preview pre { background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 6px; overflow-x: auto; margin: 15px 0; }
+  #preview pre code { background: none; color: inherit; padding: 0; }
+  #preview blockquote { border-left: 4px solid #667eea; padding-left: 15px; margin: 15px 0; color: #718096; font-style: italic; }
+  #preview ul, #preview ol { margin: 10px 0 10px 25px; }
+  #preview li { margin: 5px 0; color: #4a5568; }
+  #preview a { color: #667eea; text-decoration: none; }
+  #preview a:hover { text-decoration: underline; }
+  #preview img { max-width: 100%; height: auto; border-radius: 8px; margin: 15px 0; }
+  #preview table { border-collapse: collapse; width: 100%; margin: 15px 0; }
+  #preview th, #preview td { border: 1px solid #e2e8f0; padding: 10px; text-align: left; }
+  #preview th { background: #f7fafc; font-weight: 600; }
+  
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .modal.active {
+    display: flex;
+  }
+  
+  .modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  
+  .modal-content h2 {
+    margin-bottom: 20px;
+    color: #1a202c;
+  }
+  
+  .form-group {
+    margin-bottom: 15px;
+  }
+  
+  .form-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #4a5568;
+    font-weight: 600;
+  }
+  
+  .form-group input, .form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #cbd5e0;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  
+  .form-group input:focus, .form-group textarea:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+  
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  
+  .status {
+    padding: 15px 30px;
+    background: #f7fafc;
+    border-top: 2px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    color: #4a5568;
+  }
+  
+  .status-message {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    display: none;
+    align-items: center;
+    gap: 10px;
+    z-index: 2000;
+    animation: slideIn 0.3s ease;
+  }
+  
+  .toast.active {
+    display: flex;
+  }
+  
+  .toast.success {
+    border-left: 4px solid #48bb78;
+  }
+  
+  .toast.error {
+    border-left: 4px solid #f56565;
+  }
+  
+  @keyframes slideIn {
+    from {
+      transform: translateX(400px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  .drafts-list {
+    max-height: 300px;
+    overflow-y: auto;
+    margin: 15px 0;
+  }
+  
+  .draft-item {
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .draft-item:hover {
+    background: #f7fafc;
+    border-color: #667eea;
+  }
+  
+  .draft-info {
+    flex: 1;
+  }
+  
+  .draft-title {
+    font-weight: 600;
+    color: #1a202c;
+    margin-bottom: 4px;
+  }
+  
+  .draft-date {
+    font-size: 12px;
+    color: #718096;
+  }
+  
+  .draft-actions {
+    display: flex;
+    gap: 5px;
+  }
+  
+  .draft-actions button {
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1><i class="fas fa-edit"></i> Markdown Blog Editor</h1>
+    <div class="header-actions">
+      <button class="btn btn-secondary" onclick="showDrafts()">
+        <i class="fas fa-folder-open"></i> Drafts
+      </button>
+      <button class="btn btn-primary" onclick="saveDraft()">
+        <i class="fas fa-save"></i> Save Draft
+      </button>
+      <button class="btn btn-success" onclick="showPublishModal()">
+        <i class="fas fa-upload"></i> Publish
+      </button>
+      <button class="btn btn-danger" onclick="clearEditor()">
+        <i class="fas fa-trash"></i> Clear
+      </button>
+    </div>
+  </div>
+  
+  <div class="toolbar">
+    <button onclick="insertMarkdown('# ', '')" title="Heading 1"><i class="fas fa-heading"></i> H1</button>
+    <button onclick="insertMarkdown('## ', '')" title="Heading 2"><i class="fas fa-heading"></i> H2</button>
+    <button onclick="insertMarkdown('### ', '')" title="Heading 3"><i class="fas fa-heading"></i> H3</button>
+    <button onclick="insertMarkdown('**', '**')" title="Bold"><i class="fas fa-bold"></i></button>
+    <button onclick="insertMarkdown('*', '*')" title="Italic"><i class="fas fa-italic"></i></button>
+    <button onclick="insertMarkdown('`', '`')" title="Code"><i class="fas fa-code"></i></button>
+    <button onclick="insertMarkdown('[', '](url)')" title="Link"><i class="fas fa-link"></i></button>
+    <button onclick="insertMarkdown('![alt](', ')')" title="Image"><i class="fas fa-image"></i></button>
+    <button onclick="insertMarkdown('> ', '')" title="Quote"><i class="fas fa-quote-right"></i></button>
+    <button onclick="insertMarkdown('- ', '')" title="List"><i class="fas fa-list"></i></button>
+    <button onclick="insertMarkdown('```\n', '\n```')" title="Code Block"><i class="fas fa-file-code"></i></button>
+  </div>
+  
+  <div class="editor-container">
+    <div class="editor-pane">
+      <textarea id="editor" placeholder="Start writing your markdown here..."></textarea>
+    </div>
+    <div class="preview-pane">
+      <div id="preview"></div>
+    </div>
+  </div>
+  
+  <div class="status">
+    <div class="status-message">
+      <i class="fas fa-info-circle"></i>
+      <span id="statusText">Ready to write</span>
+    </div>
+    <div>
+      <span id="wordCount">0 words</span> | <span id="charCount">0 characters</span>
+    </div>
+  </div>
+</div>
+
+<div id="publishModal" class="modal">
+  <div class="modal-content">
+    <h2><i class="fas fa-upload"></i> Publish to GitHub</h2>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="publishPassword" placeholder="Enter your password">
+    </div>
+    <div class="form-group">
+      <label>Filename (without .md)</label>
+      <input type="text" id="publishFilename" placeholder="my-awesome-post">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-success" onclick="publishToGitHub()">
+        <i class="fas fa-check"></i> Publish
+      </button>
+      <button class="btn btn-secondary" onclick="closePublishModal()">
+        <i class="fas fa-times"></i> Cancel
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="draftsModal" class="modal">
+  <div class="modal-content">
+    <h2><i class="fas fa-folder-open"></i> Saved Drafts</h2>
+    <div id="draftsList" class="drafts-list"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeDraftsModal()">
+        <i class="fas fa-times"></i> Close
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="configModal" class="modal">
+  <div class="modal-content">
+    <h2><i class="fas fa-cog"></i> First Time Setup</h2>
+    <p style="margin-bottom: 20px; color: #718096;">Enter your GitHub credentials and password. These will be stored securely in your browser.</p>
+    <div class="form-group">
+      <label>GitHub Token</label>
+      <input type="password" id="configToken" placeholder="ghp_xxxxxxxxxxxx">
+    </div>
+    <div class="form-group">
+      <label>GitHub Username</label>
+      <input type="text" id="configOwner" placeholder="yourusername">
+    </div>
+    <div class="form-group">
+      <label>Repository Name</label>
+      <input type="text" id="configRepo" placeholder="my-blog">
+    </div>
+    <div class="form-group">
+      <label>Directory Path</label>
+      <input type="text" id="configDir" placeholder="posts" value="posts">
+    </div>
+    <div class="form-group">
+      <label>Set Your Password</label>
+      <input type="password" id="configPassword" placeholder="Choose a strong password">
+    </div>
+    <div class="form-group">
+      <label>Confirm Password</label>
+      <input type="password" id="configPasswordConfirm" placeholder="Confirm your password">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-success" onclick="saveConfig()">
+        <i class="fas fa-save"></i> Save Configuration
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast">
+  <i class="fas fa-check-circle"></i>
+  <span id="toastMessage"></span>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.0/marked.min.js"></script>
+<script>
+const editor = document.getElementById('editor');
+const preview = document.getElementById('preview');
+const statusText = document.getElementById('statusText');
+const wordCount = document.getElementById('wordCount');
+const charCount = document.getElementById('charCount');
+
+// Initialize
+function init() {
+  loadAutoSave();
+  updatePreview();
+  updateStats();
+  checkConfig();
+}
+
+// Check if config exists
+function checkConfig() {
+  const config = getConfig();
+  if (!config.token || !config.owner || !config.repo || !config.passwordHash) {
+    document.getElementById('configModal').classList.add('active');
+  }
+}
+
+// Save configuration
+async function saveConfig() {
+  const token = document.getElementById('configToken').value.trim();
+  const owner = document.getElementById('configOwner').value.trim();
+  const repo = document.getElementById('configRepo').value.trim();
+  const dir = document.getElementById('configDir').value.trim();
+  const password = document.getElementById('configPassword').value;
+  const passwordConfirm = document.getElementById('configPasswordConfirm').value;
+  
+  if (!token || !owner || !repo || !password) {
+    showToast('Please fill all required fields', 'error');
+    return;
+  }
+  
+  if (password !== passwordConfirm) {
+    showToast('Passwords do not match', 'error');
+    return;
+  }
+  
+  if (password.length < 6) {
+    showToast('Password must be at least 6 characters', 'error');
+    return;
+  }
+  
+  const passwordHash = await hashPassword(password);
+  
+  const config = { token, owner, repo, dir, passwordHash };
+  localStorage.setItem('mdEditorConfig', JSON.stringify(config));
+  
+  document.getElementById('configModal').classList.remove('active');
+  showToast('Configuration saved successfully!', 'success');
+}
+
+// Get configuration
+function getConfig() {
+  const configStr = localStorage.getItem('mdEditorConfig');
+  return configStr ? JSON.parse(configStr) : {};
+}
+
+// Hash password using SHA-256
+async function hashPassword(password) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Verify password
+async function verifyPassword(password) {
+  const config = getConfig();
+  if (!config.passwordHash) return false;
+  const inputHash = await hashPassword(password);
+  return inputHash === config.passwordHash;
+}
+
+// Auto-save
+editor.addEventListener('input', () => {
+  updatePreview();
+  updateStats();
+  autoSave();
+});
+
+function autoSave() {
+  localStorage.setItem('mdEditorAutoSave', editor.value);
+  statusText.textContent = 'Auto-saved';
+  setTimeout(() => {
+    statusText.textContent = 'Ready to write';
+  }, 2000);
+}
+
+function loadAutoSave() {
+  const saved = localStorage.getItem('mdEditorAutoSave');
+  if (saved) {
+    editor.value = saved;
+  }
+}
+
+// Update preview
+function updatePreview() {
+  preview.innerHTML = marked.parse(editor.value || '*Start writing to see preview...*');
+}
+
+// Update stats
+function updateStats() {
+  const text = editor.value;
+  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const chars = text.length;
+  wordCount.textContent = `${words} words`;
+  charCount.textContent = `${chars} characters`;
+}
+
+// Insert markdown
+function insertMarkdown(before, after) {
+  const start = editor.selectionStart;
+  const end = editor.selectionEnd;
+  const text = editor.value;
+  const selectedText = text.substring(start, end);
+  
+  const newText = text.substring(0, start) + before + selectedText + after + text.substring(end);
+  editor.value = newText;
+  
+  editor.focus();
+  editor.selectionStart = start + before.length;
+  editor.selectionEnd = start + before.length + selectedText.length;
+  
+  updatePreview();
+  updateStats();
+}
+
+// Clear editor
+function clearEditor() {
+  if (confirm('Are you sure you want to clear the editor? This will delete all unsaved content.')) {
+    editor.value = '';
+    updatePreview();
+    updateStats();
+    localStorage.removeItem('mdEditorAutoSave');
+    showToast('Editor cleared', 'success');
+  }
+}
+
+// Save draft
+function saveDraft() {
+  const content = editor.value;
+  if (!content.trim()) {
+    showToast('Nothing to save', 'error');
+    return;
+  }
+  
+  const title = prompt('Enter a title for this draft:');
+  if (!title) return;
+  
+  const drafts = JSON.parse(localStorage.getItem('mdEditorDrafts') || '[]');
+  drafts.push({
+    id: Date.now(),
+    title,
+    content,
+    date: new Date().toISOString()
+  });
+  
+  localStorage.setItem('mdEditorDrafts', JSON.stringify(drafts));
+  showToast('Draft saved successfully!', 'success');
+}
+
+// Show drafts
+function showDrafts() {
+  const drafts = JSON.parse(localStorage.getItem('mdEditorDrafts') || '[]');
+  const draftsList = document.getElementById('draftsList');
+  
+  if (drafts.length === 0) {
+    draftsList.innerHTML = '<p style="color: #718096; text-align: center;">No saved drafts</p>';
+  } else {
+    draftsList.innerHTML = drafts.map(draft => `
+      <div class="draft-item">
+        <div class="draft-info">
+          <div class="draft-title">${draft.title}</div>
+          <div class="draft-date">${new Date(draft.date).toLocaleString()}</div>
+        </div>
+        <div class="draft-actions">
+          <button class="btn btn-primary" onclick="loadDraft(${draft.id})">
+            <i class="fas fa-folder-open"></i> Load
+          </button>
+          <button class="btn btn-danger" onclick="deleteDraft(${draft.id})">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+  
+  document.getElementById('draftsModal').classList.add('active');
+}
+
+function closeDraftsModal() {
+  document.getElementById('draftsModal').classList.remove('active');
+}
+
+function loadDraft(id) {
+  const drafts = JSON.parse(localStorage.getItem('mdEditorDrafts') || '[]');
+  const draft = drafts.find(d => d.id === id);
+  
+  if (draft) {
+    if (editor.value.trim() && !confirm('Loading this draft will replace your current content. Continue?')) {
+      return;
+    }
+    
+    editor.value = draft.content;
+    updatePreview();
+    updateStats();
+    closeDraftsModal();
+    showToast('Draft loaded', 'success');
+  }
+}
+
+function deleteDraft(id) {
+  if (!confirm('Delete this draft?')) return;
+  
+  let drafts = JSON.parse(localStorage.getItem('mdEditorDrafts') || '[]');
+  drafts = drafts.filter(d => d.id !== id);
+  localStorage.setItem('mdEditorDrafts', JSON.stringify(drafts));
+  showDrafts();
+  showToast('Draft deleted', 'success');
+}
+
+// Publish modal
+function showPublishModal() {
+  const content = editor.value;
+  if (!content.trim()) {
+    showToast('Nothing to publish', 'error');
+    return;
+  }
+  
+  document.getElementById('publishModal').classList.add('active');
+  document.getElementById('publishPassword').focus();
+}
+
+function closePublishModal() {
+  document.getElementById('publishModal').classList.remove('active');
+  document.getElementById('publishPassword').value = '';
+  document.getElementById('publishFilename').value = '';
+}
+
+// Publish to GitHub
+async function publishToGitHub() {
+  const password = document.getElementById('publishPassword').value;
+  const filename = document.getElementById('publishFilename').value.trim();
+  const content = editor.value;
+  
+  if (!password || !filename) {
+    showToast('Please fill all fields', 'error');
+    return;
+  }
+  
+  const isValid = await verifyPassword(password);
+  if (!isValid) {
+    showToast('Invalid password', 'error');
+    return;
+  }
+  
+  const config = getConfig();
+  const path = `${config.dir}/${filename}.md`;
+  const message = `Add ${filename}.md`;
+  const encoded = btoa(unescape(encodeURIComponent(content)));
+  
+  statusText.textContent = 'Publishing...';
+  
+  try {
+    // First, try to get the file to check if it exists
+    const checkRes = await fetch(`https://api.github.com/repos/${config.owner}/${config.repo}/contents/${path}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `token ${config.token}`
+      }
+    });
+    
+    let sha = null;
+    if (checkRes.ok) {
+      const existing = await checkRes.json();
+      sha = existing.sha;
+      if (!confirm('This file already exists. Do you want to overwrite it?')) {
+        statusText.textContent = 'Publish cancelled';
+        closePublishModal();
+        return;
+      }
+    }
+    
+    // Now publish the file
+    const body = sha 
+      ? JSON.stringify({ message, content: encoded, sha })
+      : JSON.stringify({ message, content: encoded });
+    
+    const res = await fetch(`https://api.github.com/repos/${config.owner}/${config.repo}/contents/${path}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${config.token}`,
+        'Content-Type': 'application/json'
+      },
+      body: body
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      showToast('Published successfully!', 'success');
+      statusText.textContent = `Published: ${data.content.html_url}`;
+      closePublishModal();
+    } else {
+      const err = await res.json();
+      let errorMsg = err.message || 'Unknown error';
+      
+      if (res.status === 404) {
+        errorMsg = `Path not found. Make sure "${config.dir}" directory exists in your repo, or update the directory in settings.`;
+      } else if (res.status === 401 || res.status === 403) {
+        errorMsg = 'Authentication failed. Check your GitHub token permissions.';
+      }
+      
+      showToast(`Error: ${errorMsg}`, 'error');
+      statusText.textContent = 'Publish failed';
+      console.error('GitHub API Error:', err);
+    }
+  } catch (e) {
+    showToast(`Error: ${e.message}`, 'error');
+    statusText.textContent = 'Publish failed';
+    console.error('Publish error:', e);
+  }
+}
+
+// Toast notifications
+function showToast(message, type = 'success') {
+  const toast = document.getElementById('toast');
+  const toastMessage = document.getElementById('toastMessage');
+  
+  toast.className = `toast ${type} active`;
+  toastMessage.textContent = message;
+  
+  setTimeout(() => {
+    toast.classList.remove('active');
+  }, 3000);
+}
+
+// Keyboard shortcuts
+editor.addEventListener('keydown', (e) => {
+  if (e.ctrlKey || e.metaKey) {
+    switch(e.key) {
+      case 's':
+        e.preventDefault();
+        saveDraft();
+        break;
+      case 'b':
+        e.preventDefault();
+        insertMarkdown('**', '**');
+        break;
+      case 'i':
+        e.preventDefault();
+        insertMarkdown('*', '*');
+        break;
+    }
+  }
+});
+
+// Initialize on load
+init();
+</script>
+
+</body>
+</html>
